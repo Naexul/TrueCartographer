@@ -37,13 +37,14 @@
         var w = 22500; // ширина
         var bounds = [[-h, 0], [0, w]];
 
-        // Загружаем ваши рабочие тайлы
-        var baseMap = L.tileLayer('./{z}/{x}/{y}.PNG', {
-            bounds: bounds,
-            noWrap: true,
-            continuousWorld: true,
-            tileSize: 256
-        }).addTo(map);
+		// Загружаем ваши рабочие тайлы
+		var baseMap = L.tileLayer('./{z}/{x}/{y}.png', {
+			bounds: bounds,
+			noWrap: true,
+			continuousWorld: true,
+			tileSize: 256,
+			tms: true // Добавляем эту строчку, чтобы переключить Leaflet под формат gdal2tiles
+		}).addTo(map);
 
         // Центрируем камеру ровно по центру Зоны
         map.setView([-h / 2, w / 2], 1);
