@@ -1,120 +1,77 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>LR MAP - Interactive Stalker Zone</title>
+    <title>STALKER LAST ROAD - ИНТЕРАКТИВНАЯ КАРТА</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Подключаем стили и скрипты Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com" />
     <script src="https://unpkg.com"></script>
-
     <style>
         html, body { height: 100%; margin: 0; padding: 0; background: #1a1a1a; font-family: Arial, sans-serif; }
-        #header { height: 50px; background: #2b2b2b; color: #fff; line-height: 50px; padding-left: 20px; font-size: 20px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        #header { height: 50px; background: #2b2b2b; color: #fff; line-height: 50px; padding-left: 20px; font-size: 20px; font-weight: bold; }
         #map { height: calc(100% - 50px); width: 100%; }
-        /* Красивое оформление сталкерских всплывающих окон */
-        .leaflet-popup-content-wrapper { background: #222; color: #fff; border: 1px solid #555; border-radius: 4px; }
-        .leaflet-popup-tip { background: #222; border: 1px solid #555; }
+        .leaflet-popup-content-wrapper { background: #222; color: #fff; border: 1px solid #555; }
+        .leaflet-popup-tip { background: #222; }
     </style>
 </head>
 <body>
 
-    <div id="header">STALKER КАРТА</div>
+    <div id="header">STALKER LAST ROAD - ИНТЕРАКТИВНАЯ КАРТА</div>
     <div id="map"></div>
 
     <script type="text/javascript">
-        // Настраиваем плоскую пиксельную систему координат (без глобуса)
+        // Инициализируем карту в простых пикселях
         var map = L.map('map', {
             crs: L.CRS.Simple,
             minZoom: 0,
-            maxZoom: 6,
-            zoomControl: true
+            maxZoom: 6
         });
 
-        // Указываем точные границы вашей карты на основе генерации QGIS
-        var h = 14299; // высота
-        var w = 22500; // ширина
-        var bounds = [[-h, 0], [0, w]];
-
-		// Загружаем ваши рабочие тайлы
-		var baseMap = L.tileLayer('./{z}/{x}/{y}.png', {
-			bounds: bounds,
-			noWrap: true,
-			continuousWorld: true,
-			tileSize: 256,
-			tms: true // Добавляем эту строчку, чтобы переключить Leaflet под формат gdal2tiles
-		}).addTo(map);
-
-        // Центрируем камеру ровно по центру Зоны
-        map.setView([-h / 2, w / 2], 1);
-
-        // ==========================================
-        // БЛОК РИСОВАНИЯ СЛОЕВ И ИНФОРМАЦИИ
-        // ==========================================
-
-        // 1. Создаем пустые независимые слои (группы)
-        var layerBazy = L.layerGroup();
-        var layerAnomalii = L.layerGroup();
-        var layerTorgovcy = L.layerGroup();
-
-        // 2. НАПОЛНЯЕМ СЛОИ КОНТЕНТОМ (Примеры меток)
+        // Настройки сетки на основе вашей генерации
+        var maxZoom = 6;
         
-        // Пример базового маркера для Слоя Баз (Координаты подбираются на глаз в левом углу сайта)
-        L.marker([-7149, 11250]).addTo(layerBazy)
-            .bindPopup('<b>Деревня Новичков</b><br>Стартовый лагерь одиночек. Здесь можно взять первые квесты.');
+        // Кастомная функция расчета путей, которая ИДЕАЛЬНО подстраивается под gdal2tiles
+        var baseMap = L.tileLayer('./{z}/{x}/{y}.png', {
+            noWrap: true,
+            continuousWorld: true,
+            tileSize: 256,
+            // Математический переворот Y, чтобы Leaflet читал папки точь-в-точь как их создала программа
+            tileUrlFunction: function(coords) {
+                var z = coords.z;
+                var x = coords.x;
+                // Формула инверсии Y для плоского растра gdal2tiles
+                var y = Math.pow(2, z) - 1 - coords.y; 
+                return './' + z + '/' + x + '/' + y + '.png';
+            }
+        });
 
-        L.marker([-3000, 5000]).addTo(layerBazy)
-            .bindPopup('<b>База Группировки "Долг"</b><br>Территория завода Росток. Проход только без оружия.');
+        // Подменяем стандартный метод Leaflet на наш рабочий расчет путей
+        baseMap.getTileUrl = baseMap.options.tileUrlFunction;
+        baseMap.addTo(map);
 
-        // Пример опасной зоны (круга) для Слоя Аномалий
-        L.circle([-9000, 8000], {
-            color: 'orange',
-            fillColor: '#ff7700',
-            fillOpacity: 0.4,
-            radius: 800 // Радиус круга на карте
-        }).addTo(layerAnomalii).bindPopup('<b>Аномальное поле "Выверт"</b><br>Высокая концентрация гравитационных аномалий.');
+        // Устанавливаем камеру в стартовую рабочую точку (координаты пикселей)
+        map.setView([-100, 100], 1);
 
-        L.circle([-5000, 15000], {
-            color: 'red',
-            fillColor: '#ff0000',
-            fillOpacity: 0.5,
-            radius: 1200
-        }).addTo(layerAnomalii).bindPopup('<b>Зона Пси-Излучения</b><br>Без хорошего шлема или таблеток вход воспрещен!');
+        // Слои для галочек
+        var layerBazy = L.layerGroup().addTo(map);
+        var layerAnomalii = L.layerGroup().addTo(map);
 
-        // Пример торговца
-        L.marker([-7300, 11500]).addTo(layerTorgovcy)
-            .bindPopup('<b>Бункер Сидоровича</b><br>Покупка хабара, продажа снаряжения.');
+        // Примеры меток
+        L.marker([-100, 100]).addTo(layerBazy).bindPopup('<b>Стартовая точка Зоны</b>');
 
-
-        // По умолчанию сразу включаем нужные слои на карте
-        layerBazy.addTo(map);
-        layerAnomalii.addTo(map);
-        layerTorgovcy.addTo(map);
-
-        // 3. СОЗДАЕМ МЕНЮ С ГАЛОЧКАМИ В ПРАВОМ ВЕРХНЕМ УГЛУ
         var overlayMaps = {
-            "<span style='color: #55ff55; font-weight:bold;'>🏰 Базы и Лагеря</span>": layerBazy,
-            "<span style='color: #ff5555; font-weight:bold;'>☢️ Аномалии и Радиация</span>": layerAnomalii,
-            "<span style='color: #55ffff; font-weight:bold;'>💰 Торговцы / NPC</span>": layerTorgovcy
+            "<span style='color: #55ff55; font-weight:bold;'>🏰 Базы</span>": layerBazy,
+            "<span style='color: #ff5555; font-weight:bold;'>☢️ Аномалии</span>": layerAnomalii
         };
-
-        // Добавляем пульт управления слоями на экран
         L.control.layers(null, overlayMaps, {collapsed: false}).addTo(map);
 
-        // Инструмент для админа: при клике в любое место карты в консоль браузера (F12) 
-        // и во всплывающее окно будет выводиться точная координата для Блокнота
+        // Клик-утилита для поиска координат
         map.on('click', function(e) {
-            var coord = e.latlng;
-            var lat = coord.lat.toFixed(0);
-            var lng = coord.lng.toFixed(0);
             L.popup()
-                .setLatLng(coord)
-                .setContent("Координаты для Блокнота:<br><b>[" + lat + ", " + lng + "]</b>")
+                .setLatLng(e.latlng)
+                .setContent("Сюда в Блокнот:<br><b>[" + e.latlng.lat.toFixed(0) + ", " + e.latlng.lng.toFixed(0) + "]</b>")
                 .openOn(map);
-            console.log("Координаты маркера: [" + lat + ", " + lng + "]");
         });
-
     </script>
 </body>
 </html>
