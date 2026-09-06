@@ -20,7 +20,7 @@
 </head>
 <body>
 
-    <div id="header">STALKER LAST ROAD - ИНТЕРАКТИВНАЯ КАРТА</div>
+    <div id="header">STALKER КАРТА</div>
     <div id="map"></div>
 
     <script type="text/javascript">
@@ -38,7 +38,7 @@
         var bounds = [[-h, 0], [0, w]];
 
         // Загружаем ваши рабочие тайлы
-        var baseMap = L.tileLayer('./{z}/{x}/{y}.png', {
+        var baseMap = L.tileLayer('./{z}/{x}/{y}.PNG', {
             bounds: bounds,
             noWrap: true,
             continuousWorld: true,
